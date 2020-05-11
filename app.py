@@ -1,8 +1,8 @@
 import sys
 from PySide2.QtCore import Slot
-from PySide2.QtGui import QKeySequence
+from PySide2.QtGui import QKeySequence, QStandardItemModel, QStandardItem
 from PySide2.QtWidgets import QMainWindow, QAction, QApplication, QVBoxLayout, QHBoxLayout,\
-  QPushButton, QWidget, QGroupBox, QFileDialog, QLineEdit
+  QPushButton, QWidget, QGroupBox, QFileDialog, QLineEdit, QListView, QLabel
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -54,15 +54,32 @@ class MainWindow(QMainWindow):
         vertical_layout.addLayout(file_select_organizer)
 
         # add listview for excel pages
+        excel_label = QLabel("Excel Workbook Pages")
+        excel_sheets = QListView()
+        excel_label_model = QStandardItemModel()
+        excel_sheets.setModel(excel_label_model)
+
+        # to add item:
+        excel_label_model.appendRow(QStandardItem("asdf"))
+
+        vertical_layout.addWidget(excel_label)
+        vertical_layout.addWidget(excel_sheets)
 
 
         # add listview for column headers
+        variable_label = QLabel("Column Names")
+        variables = QListView()
+        variables_model = QStandardItemModel()
+        variables.setModel(variables_model)
+        vertical_layout.addWidget(variable_label)
+        vertical_layout.addWidget(variables)
 
         '''
         Connect Functions
         '''
-
+        # Connect File dialog to file selection
         file_select_button.clicked.connect(lambda: self.openFileNameDialog(text_input))
+
         # add function to populate listview for excel pages
         # add funciton to populate listview for column headers
         return groupbox

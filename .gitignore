@@ -1,2 +1,7 @@
 build/
 dist/
+.idea/
+.idea/workspace.xml
+app.spec
+*.xlsx
+__pycache__/

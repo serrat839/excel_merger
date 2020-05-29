@@ -104,7 +104,7 @@ class MainWindow(QMainWindow):
 
     def openFileNameDialog(self, line_edit, list_model, group_name):
         options = QFileDialog.Options()
-        fileName, _ = QFileDialog.getOpenFileName(self, "Title", "", "Excel Workbooks (*.xlsx)", options=options)
+        fileName, _ = QFileDialog.getOpenFileName(self, "Select an Excel file", "", "Excel Workbooks (*.xlsx)", options=options)
         if fileName:
             line_edit.setText(fileName)
             self.worksheets[group_name] = pd.read_excel(fileName, None)

@@ -2,13 +2,17 @@ import sys
 from PySide2.QtCore import Slot
 from PySide2.QtGui import QKeySequence, QStandardItemModel, QStandardItem
 from PySide2.QtWidgets import QMainWindow, QAction, QApplication, QVBoxLayout, QHBoxLayout,\
-  QPushButton, QWidget, QGroupBox, QFileDialog, QLineEdit, QListView, QLabel
+  QPushButton, QWidget, QGroupBox, QFileDialog, QLineEdit, QListView, QLabel, QAbstractItemView
+import pandas as pd
 
 class MainWindow(QMainWindow):
     def __init__(self):
         QMainWindow.__init__(self)
         self.GROUP1 = "Group 1"
         self.GROUP2 = "Group 2"
+        self.worksheets = {}
+        self.selected = {}
+        self.columns = {}
         self.FILE_SELECT = "File Select"
         self.setWindowTitle("Excel Column Merger")
         self.__init_ui()
@@ -25,12 +29,19 @@ class MainWindow(QMainWindow):
         self.main = QWidget()
 
         # Make our main widget's layout
+        vert_layout = QVBoxLayout()
+        self.main.setLayout(vert_layout)
+
         horiz_layout = QHBoxLayout()
-        self.main.setLayout(horiz_layout)
+        vert_layout.addLayout(horiz_layout)
 
         # Add file control groups to our layout
         horiz_layout.addWidget(self.__create_vertical_section(self.GROUP1))
         horiz_layout.addWidget(self.__create_vertical_section(self.GROUP2))
+
+        button = QPushButton("Merge!")
+        button.clicked.connect(self.merge)
+        vert_layout.addWidget(button)
 
     # This function takes in a group_name and then populates a QGroupBox with
     # the proper widgets to navigate and select parts of an excel file.
@@ -56,11 +67,9 @@ class MainWindow(QMainWindow):
         # add listview for excel pages
         excel_label = QLabel("Excel Workbook Pages")
         excel_sheets = QListView()
+        excel_sheets.setEditTriggers(QAbstractItemView.NoEditTriggers)
         excel_label_model = QStandardItemModel()
         excel_sheets.setModel(excel_label_model)
-
-        # to add item:
-        excel_label_model.appendRow(QStandardItem("asdf"))
 
         vertical_layout.addWidget(excel_label)
         vertical_layout.addWidget(excel_sheets)
@@ -69,6 +78,7 @@ class MainWindow(QMainWindow):
         # add listview for column headers
         variable_label = QLabel("Column Names")
         variables = QListView()
+        self.columns[group_name] = variables
         variables_model = QStandardItemModel()
         variables.setModel(variables_model)
         vertical_layout.addWidget(variable_label)
@@ -78,18 +88,49 @@ class MainWindow(QMainWindow):
         Connect Functions
         '''
         # Connect File dialog to file selection
-        file_select_button.clicked.connect(lambda: self.openFileNameDialog(text_input))
+        file_select_button.clicked.connect(lambda: self.openFileNameDialog(text_input, excel_label_model, group_name))
+        # Connect listview to populate listview for column headers
+        excel_sheets.clicked.connect(lambda x: self.populateColumns(x, excel_label_model, variables_model, group_name))
 
-        # add function to populate listview for excel pages
-        # add funciton to populate listview for column headers
         return groupbox
 
-    def openFileNameDialog(self, line_edit, listview):
+    def populateColumns(self, index, model, insert_model, group):
+        page = model.itemFromIndex(index).text()
+        self.selected[group] = self.worksheets[group][page]
+        insert_model.removeRows(0, insert_model.rowCount())
+        for column in self.selected[group].columns:
+            insert_model.appendRow(QStandardItem(column))
+
+    def openFileNameDialog(self, line_edit, list_model, group_name):
         options = QFileDialog.Options()
         fileName, _ = QFileDialog.getOpenFileName(self,"Title", "","Excel Workbooks (*.xlsx)", options=options)
         if fileName:
-          line_edit.setText(fileName)
-          # populate page listview
+            line_edit.setText(fileName)
+            self.worksheets[group_name] = pd.read_excel(fileName, None)
+            list_model.removeRows(0, list_model.rowCount())
+            for sheet in self.worksheets[group_name]:
+                list_model.appendRow(QStandardItem(sheet))
+
+    def merge(self):
+        vars = []
+        for x in self.columns:
+            index = self.columns[x].selectedIndexes()
+            vars.append(index[0].data())
+
+        # WRAp up this section then u r done and free from thsi mortal coil
+        if len(vars) == 2:
+            # ADD THING TO TELL USER THAT THEY CAN SAVE THE EXCEL WORKSHEET!!
+            result = self.selected[self.GROUP1].merge(right=self.selected[self.GROUP2], how="outer", left_on=vars[0], right_on=vars[1])
+            print(result)
+        else:
+            # ADD THING TO REMIND THE USER TO PICK COLUMNS TO SORT BY
+            print("ERROR")
+
+
+
+
+
+
 
 
 if __name__ == "__main__":

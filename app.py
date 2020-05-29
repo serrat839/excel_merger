@@ -2,7 +2,7 @@ import sys
 from PySide2.QtCore import Slot
 from PySide2.QtGui import QKeySequence, QStandardItemModel, QStandardItem
 from PySide2.QtWidgets import QMainWindow, QAction, QApplication, QVBoxLayout, QHBoxLayout,\
-  QPushButton, QWidget, QGroupBox, QFileDialog, QLineEdit, QListView, QLabel, QAbstractItemView
+  QPushButton, QWidget, QGroupBox, QFileDialog, QLineEdit, QListView, QLabel, QAbstractItemView, QMessageBox
 import pandas as pd
 
 class MainWindow(QMainWindow):
@@ -21,7 +21,7 @@ class MainWindow(QMainWindow):
 
         # Window dimensions
         geometry = qApp.desktop().availableGeometry(self)
-        self.setFixedSize(geometry.width() * 0.8, geometry.height() * 0.7)
+        self.resize(900, 600)
 
     # This function sets up our applications ui
     def __init_ui(self):
@@ -76,8 +76,9 @@ class MainWindow(QMainWindow):
 
 
         # add listview for column headers
-        variable_label = QLabel("Column Names")
+        variable_label = QLabel("Merge on column:")
         variables = QListView()
+        variables.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.columns[group_name] = variables
         variables_model = QStandardItemModel()
         variables.setModel(variables_model)
@@ -103,7 +104,7 @@ class MainWindow(QMainWindow):
 
     def openFileNameDialog(self, line_edit, list_model, group_name):
         options = QFileDialog.Options()
-        fileName, _ = QFileDialog.getOpenFileName(self,"Title", "","Excel Workbooks (*.xlsx)", options=options)
+        fileName, _ = QFileDialog.getOpenFileName(self, "Title", "", "Excel Workbooks (*.xlsx)", options=options)
         if fileName:
             line_edit.setText(fileName)
             self.worksheets[group_name] = pd.read_excel(fileName, None)
@@ -113,22 +114,35 @@ class MainWindow(QMainWindow):
 
     def merge(self):
         vars = []
-        for x in self.columns:
-            index = self.columns[x].selectedIndexes()
-            vars.append(index[0].data())
+        try:
+            for x in self.columns:
+                index = self.columns[x].selectedIndexes()
+                vars.append(index[0].data())
 
-        # WRAp up this section then u r done and free from thsi mortal coil
-        if len(vars) == 2:
-            # ADD THING TO TELL USER THAT THEY CAN SAVE THE EXCEL WORKSHEET!!
-            result = self.selected[self.GROUP1].merge(right=self.selected[self.GROUP2], how="outer", left_on=vars[0], right_on=vars[1])
-            print(result)
-        else:
-            # ADD THING TO REMIND THE USER TO PICK COLUMNS TO SORT BY
-            print("ERROR")
+            # WRAp up this section then u r done and free from thsi mortal coil
+            if len(vars) == 2:
 
+                saved = self.saveFileDialog()
 
+                if saved:
+                    # ADD THING TO TELL USER THAT THEY CAN SAVE THE EXCEL WORKSHEET!!
+                    result = self.selected[self.GROUP1].merge(right=self.selected[self.GROUP2], how="outer", left_on=vars[0], right_on=vars[1])
+                    result.to_excel(saved)
 
+        except:
+            msg = QMessageBox()
+            msg.setWindowTitle("Not enough information!")
+            msg.setText("Please make sure you have a sheet and column selected for each Excel workbook")
+            msg.setIcon(QMessageBox.Critical)
+            x = msg.exec_()
 
+    def saveFileDialog(self):
+        options = QFileDialog.Options()
+        fileName, _ = QFileDialog.getSaveFileName(self, "Save file location", "",
+                                                  "Excel Workbooks (*.xlsx)", options=options)
+        if fileName:
+            return (fileName)
+        return (None)
 
 
 
